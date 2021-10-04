@@ -15,6 +15,21 @@ import { BleManager } from 'react-native-ble-plx';
 import base64 from 'react-native-base64';
 const transactionId = "moniter";
 
+const MANUFACTURING_ID_ARRAY = [
+  '//8A',
+  '//8B',
+  '//8C',
+  '//8D',
+  'RQgA',
+  'RQgB',
+  'RQgC',
+  'RQgD',
+  'RQgE',
+  'RQgF',
+];
+
+const isDometicDevice = MANUFACTURER_ID => MANUFACTURING_ID_ARRAY.includes(MANUFACTURER_ID);
+
 export default class App extends Component {
 
   constructor() {
@@ -55,48 +70,11 @@ export default class App extends Component {
         console.log("device")
         console.log(this.state.serviceUUID, "device", this.state.characteristicsUUID)
         console.log(this.state.device)
-        if(characteristic) {
+        if (characteristic) {
           alert('Connected Successfully. You can check connection by Clicking on "IsConnected" Button')
         } else {
           alert('Device not Connected')
         }
-        // let snifferService = null
-        // var SERVICE_SNIFFER_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-        // var SNIFFER_VOLTAGE_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-
-        // device.services().then(services => {
-        //   let voltageCharacteristic = null
-        //   snifferService = services.filter(service => service.uuid === this.state.serviceUUID)[0]
-        //   snifferService.characteristics().then(characteristics => {
-        //     console.log("characteristics characteristics")
-        //     console.log(characteristics)
-        //     this.setState({ notificationReceiving: true })
-        //     // voltageCharacteristic is retrieved correctly and data is also seems correct
-        //     voltageCharacteristic = characteristics.filter(c => c.uuid === characteristics[0].uuid)[0]
-        //     voltageCharacteristic.monitor((error, c) => {
-        //       // RECEIVED THE ERROR HERE (voltageCharacteristic.notifiable === true)
-        //       if (error) {
-        //         console.log("error in monitering", error)
-        //         return;
-        //       }
-        //       else {
-        //         // console.log("c",base64.decode(c.value))  
-        //         const data1 = base64.decode(c.value);
-        //         var s = data1.split(" ");
-        //         var s1 = parseInt(s[1]);
-        //         if (isNaN(s1)) { count++; }
-        //         else {
-        //           if (count == 1) {
-        //             this.state.makedata.push(<Text key={moment().valueOf()}>{s[0]} : {s1 / 1000} {"\n"} </Text>);
-        //             this.setState({ dateTime: "Data Received at : " + moment().format("MMMM Do, h:mm:ss a"), makedata: this.state.makedata });
-        //           }
-        //           if (count == 3) { count = 0; this.setState({ makedata: [] }) }
-        //         }
-        //       }
-        //     }, transactionId)
-        //   }).catch(error => console.log(error))
-        // })
-        // return
       }).catch((error) => {
         console.log(error, 'this is the console of write message function')
       })
@@ -144,48 +122,21 @@ export default class App extends Component {
     console.log('Scanning all devices!!!!')
     this.setState({ text1: "Scanning..." })
     this.manager.startDeviceScan(null, null, async (error, device) => {
-      console.log(device.id, "Scanning...");
-      this.setState({ allDevices: [...this.state.allDevices, device.id] }, () => {
-        console.log(this.state.allDevices, 'this is the console of all Devices')
-      })
-      const HeadsetID = device.id
-      // this.manager.stopDeviceScan();
-      // console.log(/[_]/g.test(device.id), 'console of device:')
-      // this.manager.stopDeviceScan();
-      if (null) {
-        console.log('null')
+      const { manufacturerData } = device;
+      const MANUFACTURER_ID = manufacturerData && manufacturerData.substring(0, 4);
+      if (isDometicDevice(MANUFACTURER_ID)) {
+        console.log(device.id, "ID of all scanning devices");
+        this.setState({ allDevices: [...this.state.allDevices, device.id] })
+        if (null) {
+          console.log('null')
+        }
+        if (error) {
+          this.alert("Error in scan=> " + error)
+          this.setState({ text1: "" })
+          this.manager.stopDeviceScan();
+          return
+        }
       }
-      if (error) {
-        this.alert("Error in scan=> " + error)
-        this.setState({ text1: "" })
-        this.manager.stopDeviceScan();
-        return
-      }
-      // if (/[_]/g.test(device.name)) {
-      // let nameSplit = device.name.split('_');
-      // if (nameSplit[0] == 'TAPP') { //T3X1 //TAPP
-      // const serviceUUIDs = device.serviceUUIDs[0]
-      // this.setState({ text1: "Connecting to " + device.name })
-      //listener for disconnection
-      /* this.manager.onDeviceDisconnected(device.id, (error, device) => {
-           console.log(error);
-           console.log("errordddd",device);
-           // if(this.props.device.isConnected) {
-           //     this.scanAndConnect()
-           // }
-           
-       });*/
-      //  ++++++++++++++++
-      // ---------------------------
-      // .then((device) => {
-      //   // return this.setupNotifications(device)
-      // }).then(() => {
-      //   console.log("Listening...")
-      // }, (error) => {
-      //   this.alert("Connection error" + JSON.stringify(error))
-      // })
-      // }
-      // }
     });
   }
 
@@ -200,10 +151,10 @@ export default class App extends Component {
         console.log("characteristic")
         console.log(characteristic.serviceUUID)
         console.log("Discovering services and characteristics", characteristic.uuid);
-        if(device.id && characteristic.serviceUUID && characteristic.uuid) {
+        if (device.id && characteristic.serviceUUID && characteristic.uuid) {
           this.setState({ deviceid: device.id, serviceUUID: characteristic.serviceUUID, characteristicsUUID: characteristic.uuid, device: device })
           this.setState({ text1: "Conneted to " + device.name })
-          this.setState({deviceName: device.name})
+          this.setState({ deviceName: device.name })
           alert('Now, Device is ready to connect')
         } else {
           alert('Problem occur while getting Services')
@@ -219,7 +170,7 @@ export default class App extends Component {
   checkDeviceConnection() {
     const device = this.state.device;
     this.manager.isDeviceConnected(this.state.deviceid).then((res) => {
-      if(res){
+      if (res) {
         alert('You are connected to: ' + this.state.deviceName + ' ' + this.state.deviceid)
       } else {
         alert('You are not connected with any device')
