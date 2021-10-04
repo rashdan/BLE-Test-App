@@ -15,6 +15,7 @@
 		4ED6051E8A2C6D87329CD538 /* libPods-TestAppBLE-TestAppBLETests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0D7EB13D3647DF9918DC9A21 /* libPods-TestAppBLE-TestAppBLETests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		8BFFBC892701EB2E006B7D27 /* BLEConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BFFBC882701EB2E006B7D27 /* BLEConfig.swift */; };
+		A97F4F07270B138200FAF468 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A97F4F06270B138200FAF468 /* Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -43,6 +44,7 @@
 		8BFFBC882701EB2E006B7D27 /* BLEConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLEConfig.swift; sourceTree = "<group>"; };
 		9F9CA16240C98DB267C3EAEB /* Pods-TestAppBLE-TestAppBLETests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TestAppBLE-TestAppBLETests.debug.xcconfig"; path = "Target Support Files/Pods-TestAppBLE-TestAppBLETests/Pods-TestAppBLE-TestAppBLETests.debug.xcconfig"; sourceTree = "<group>"; };
 		A51765AC9D3EDA92D03A64F4 /* Pods-TestAppBLE.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TestAppBLE.debug.xcconfig"; path = "Target Support Files/Pods-TestAppBLE/Pods-TestAppBLE.debug.xcconfig"; sourceTree = "<group>"; };
+		A97F4F06270B138200FAF468 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		BCF53C911C350B20E9AA9FDF /* libPods-TestAppBLE.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TestAppBLE.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C28AA21E8ABBD19787DAB340 /* Pods-TestAppBLE-TestAppBLETests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TestAppBLE-TestAppBLETests.release.xcconfig"; path = "Target Support Files/Pods-TestAppBLE-TestAppBLETests/Pods-TestAppBLE-TestAppBLETests.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
@@ -97,6 +99,7 @@
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				8BFFBC872701EB2E006B7D27 /* TestAppBLE-Bridging-Header.h */,
+				A97F4F06270B138200FAF468 /* Info.plist */,
 			);
 			name = TestAppBLE;
 			sourceTree = "<group>";
@@ -249,6 +252,7 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				A97F4F07270B138200FAF468 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
