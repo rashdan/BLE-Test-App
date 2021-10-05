@@ -136,7 +136,7 @@ export default class App extends Component {
     this.manager.startDeviceScan(null, null, async (error, device) => {
       const { manufacturerData } = device;
       const MANUFACTURER_ID = manufacturerData && manufacturerData.substring(0, 4);
-      // if (isDometicDevice(MANUFACTURER_ID)) {
+      if (isDometicDevice(MANUFACTURER_ID)) {
       console.log(device.id, "ID of all scanning devices");
       this.setState({ allDevices: [...this.state.allDevices, device.id] })
       if (null) {
@@ -148,7 +148,7 @@ export default class App extends Component {
         this.manager.stopDeviceScan();
         return
       }
-      // }
+      }
     });
   }
 
