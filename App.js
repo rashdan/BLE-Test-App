@@ -28,16 +28,28 @@ const MANUFACTURING_ID_ARRAY = [
   'RQgF',
 ];
 
+const getGateway = () => {
+  return {
+    BLE_COMMUNICATION: {
+      BLE_SERVICE_UUID: '537a0400-0995-481f-926c-1604e23fd515',
+      BLE_CHARACTERISTIC_WRITE_UUID: '537a0401-0995-481f-926c-1604e23fd515',
+      BLE_CHARACTERISTIC_NOTIFY_UUID: '537a0402-0995-481f-926c-1604e23fd515',
+    }
+  }
+};
+
 const isDometicDevice = MANUFACTURER_ID => MANUFACTURING_ID_ARRAY.includes(MANUFACTURER_ID);
 
 export default class App extends Component {
 
   constructor() {
     super()
+    this.gateway = getGateway()
+    this.bleSubscription = null;
     this.manager = new BleManager()
     this.state = {
       deviceid: '', serviceUUID: '', characteristicsUUID: '', text1: '', device: {}, makedata: [], showToast: false,
-      notificationReceiving: false, allDevices: [], deviceName: '', existingDevices: ''
+      notificationReceiving: false, allDevices: [], deviceName: ''
     }
   }
 
@@ -72,7 +84,6 @@ export default class App extends Component {
         console.log(this.state.device)
         if (characteristic) {
           alert('Connected Successfully. You can check connection by Clicking on "IsConnected" Button')
-          // this.setState({existingDevices: this.state.deviceid})
         } else {
           alert('Device not Connected')
         }
@@ -120,31 +131,14 @@ export default class App extends Component {
   }
 
   async scanAndConnect() {
-    var i = 0
     console.log('Scanning all devices!!!!')
     this.setState({ text1: "Scanning..." })
     this.manager.startDeviceScan(null, null, async (error, device) => {
       const { manufacturerData } = device;
       const MANUFACTURER_ID = manufacturerData && manufacturerData.substring(0, 4);
-      if (isDometicDevice(MANUFACTURER_ID)) {
-      // console.log(device.id, "ID of all scanning devices");
+      // if (isDometicDevice(MANUFACTURER_ID)) {
+      console.log(device.id, "ID of all scanning devices");
       this.setState({ allDevices: [...this.state.allDevices, device.id] })
-      // if (i < 3) {
-      //   this.ConnectFunc(this.state.allDevices[i])
-      //   console.log(this.state.allDevices[i], 'inside setState All devices')
-      //   i++
-      // }
-      // if(this.state.existingDevices){
-      //   // const ExID = this.state.allDevices.filter((item) => {
-      //   //   if(this.state.existingDevices == item)
-      //   //   {
-      //   //     return item 
-      //   //   }
-      //   // })
-      //   this.manager.stopDeviceScan();
-      //   console.log(this.state.existingDevices, 'Console of ExID')
-      //   this.ConnectFunc(this.state.existingDevices)
-      }
       if (null) {
         console.log('null')
       }
@@ -154,43 +148,44 @@ export default class App extends Component {
         this.manager.stopDeviceScan();
         return
       }
-      // if(i < 3)
-      // {
-      //   console.log(this.state.allDevices[0], 'inside if statement')
-      // }
       // }
     });
   }
 
   ConnectFunc(id) {
-
-    console.log(id, 'outside connect function')
-    this.manager.connectToDevice(id, { autoConnect: true }).then((device) => {
-      // console.log(device, 'this the console of connected device!!!!!')
-      (async () => {
-        const services = await device.discoverAllServicesAndCharacteristics()
-        console.log(services, 'this is the console of descover services')
-        const characteristic = await this.getServicesAndCharacteristics(services)
-        console.log("characteristic")
-        console.log(characteristic.serviceUUID)
-        console.log("Discovering services and characteristics", characteristic.uuid);
-        if (device.id && characteristic.serviceUUID && characteristic.uuid) {
-          this.setState({ deviceid: device.id, serviceUUID: characteristic.serviceUUID, characteristicsUUID: characteristic.uuid, device: device })
-          this.setState({ text1: "Conneted to " + device.name })
-          this.setState({ deviceName: device.name })
-          this.writeMesage("ACK", "ACK Writted")
-        } else {
-          alert('Problem occur while getting Services')
+    this.manager
+      .connectToDevice(id, { autoConnect: true })
+      .then(async device => {
+        this.setState({ device: device })
+        return device.discoverAllServicesAndCharacteristics();
+      })
+      .then(async device => {
+        await this.manager.isDeviceConnected(device.id);
+        await this.manager.characteristicsForDevice(
+          device.id,
+          this.gateway.BLE_COMMUNICATION.BLE_SERVICE_UUID,
+        );
+        this.listen();
+        console.log('Success Message')
+        alert('Connection Successfull')
+        this.setState({deviceid: id})
+      })
+      .catch(err => {
+        console.log(
+          'bleDevice connect error - ',
+          err,
+          'error code',
+          err.code,
+        );
+        if (err.errorCode === 2) {
+          // 2 is OperationCancelled
+          this.shouldRescan = true;
         }
-      })();
-      this.setState({ device: device })
-      return device.discoverAllServicesAndCharacteristics()
-    }).catch((error) => {
-      console.log(error, 'this is the console of connection error')
-    })
+      });
   }
 
   checkDeviceConnection() {
+    const device = this.state.device;
     this.manager.isDeviceConnected(this.state.deviceid).then((res) => {
       if (res) {
         alert('You are connected to: ' + this.state.deviceName + ' ' + this.state.deviceid)
@@ -205,8 +200,24 @@ export default class App extends Component {
     this.manager.cancelDeviceConnection(this.state.deviceid).then((res) => {
       alert('Disconnected Successfully')
       console.log(res, 'Device disconnected successfully')
-      this.setState({ deviceid: '', serviceUUID: '', characteristicsUUID: '', text1: '', device: {}, allDevices: [], deviceName: '' })
     })
+  }
+
+  async listen() {
+    this.bleSubscription = await this.manager.monitorCharacteristicForDevice(
+      this.state.device.id,
+      this.gateway.BLE_COMMUNICATION.BLE_SERVICE_UUID,
+      this.gateway.BLE_COMMUNICATION.BLE_CHARACTERISTIC_NOTIFY_UUID,
+      (error, characteristic) => {
+        if (error) {
+          console.log('characteristic error===>: ', error);
+        } else {
+          console.log('receive characteristic: ', characteristic.value);
+          const bytes = base64ToBytes(characteristic.value);
+          console.log('receive characteristic bytes===>: ', bytes);
+        }
+      },
+    );
   }
 
   render() {
@@ -226,9 +237,12 @@ export default class App extends Component {
                 )
               })}
             </View>}
+            {/* <TouchableOpacity style={styles.Button_container} onPress={() => this.writeMesage("ACK", "ACK Writted")}>
+              <Text style={{ fontSize: 22, fontWeight: '600', color: 'white' }}>Connect</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.Button_container} onPress={() => this.checkDeviceConnection()}>
               <Text style={{ fontSize: 22, fontWeight: '600', color: 'white' }}>Is Connected</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity style={styles.Button_container} onPress={() => this.disconnectDevice()}>
               <Text style={{ fontSize: 22, fontWeight: '600', color: 'white' }}>Disconnect</Text>
             </TouchableOpacity>
