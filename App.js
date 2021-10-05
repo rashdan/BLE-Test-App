@@ -28,12 +28,24 @@ const MANUFACTURING_ID_ARRAY = [
   'RQgF',
 ];
 
+const getGateway = () => {
+  return {
+    BLE_COMMUNICATION: {
+      BLE_SERVICE_UUID: '537a0400-0995-481f-926c-1604e23fd515',
+      BLE_CHARACTERISTIC_WRITE_UUID: '537a0401-0995-481f-926c-1604e23fd515',
+      BLE_CHARACTERISTIC_NOTIFY_UUID: '537a0402-0995-481f-926c-1604e23fd515',
+    }
+  }
+};
+
 const isDometicDevice = MANUFACTURER_ID => MANUFACTURING_ID_ARRAY.includes(MANUFACTURER_ID);
 
 export default class App extends Component {
 
   constructor() {
     super()
+    this.gateway = getGateway()
+    this.bleSubscription = null;
     this.manager = new BleManager()
     this.state = {
       deviceid: '', serviceUUID: '', characteristicsUUID: '', text1: '', device: {}, makedata: [], showToast: false,
@@ -125,46 +137,49 @@ export default class App extends Component {
       const { manufacturerData } = device;
       const MANUFACTURER_ID = manufacturerData && manufacturerData.substring(0, 4);
       if (isDometicDevice(MANUFACTURER_ID)) {
-        console.log(device.id, "ID of all scanning devices");
-        this.setState({ allDevices: [...this.state.allDevices, device.id] })
-        if (null) {
-          console.log('null')
-        }
-        if (error) {
-          this.alert("Error in scan=> " + error)
-          this.setState({ text1: "" })
-          this.manager.stopDeviceScan();
-          return
-        }
+      console.log(device.id, "ID of all scanning devices");
+      this.setState({ allDevices: [...this.state.allDevices, device.id] })
+      if (null) {
+        console.log('null')
+      }
+      if (error) {
+        this.alert("Error in scan=> " + error)
+        this.setState({ text1: "" })
+        this.manager.stopDeviceScan();
+        return
+      }
       }
     });
   }
 
   ConnectFunc(id) {
-    console.log(id, 'outside connect function')
-    this.manager.connectToDevice(id, { autoConnect: true }).then((device) => {
-      // console.log(device, 'this the console of connected device!!!!!')
-      (async () => {
-        const services = await device.discoverAllServicesAndCharacteristics()
-        console.log(services, 'this is the console of descover services')
-        const characteristic = await this.getServicesAndCharacteristics(services)
-        console.log("characteristic")
-        console.log(characteristic.serviceUUID)
-        console.log("Discovering services and characteristics", characteristic.uuid);
-        if (device.id && characteristic.serviceUUID && characteristic.uuid) {
-          this.setState({ deviceid: device.id, serviceUUID: characteristic.serviceUUID, characteristicsUUID: characteristic.uuid, device: device })
-          this.setState({ text1: "Conneted to " + device.name })
-          this.setState({ deviceName: device.name })
-          alert('Now, Device is ready to connect')
-        } else {
-          alert('Problem occur while getting Services')
+    this.manager
+      .connectToDevice(id, { autoConnect: true })
+      .then(async device => {
+        this.setState({ device: device })
+        return device.discoverAllServicesAndCharacteristics();
+      })
+      .then(async device => {
+        await this.manager.isDeviceConnected(device.id);
+        await this.manager.characteristicsForDevice(
+          device.id,
+          this.gateway.BLE_COMMUNICATION.BLE_SERVICE_UUID,
+        );
+        this.listen();
+        console.log('Success Message')
+      })
+      .catch(err => {
+        console.log(
+          'bleDevice connect error - ',
+          err,
+          'error code',
+          err.code,
+        );
+        if (err.errorCode === 2) {
+          // 2 is OperationCancelled
+          this.shouldRescan = true;
         }
-      })();
-      this.setState({ device: device })
-      return device.discoverAllServicesAndCharacteristics()
-    }).catch((error) => {
-      console.log(error, 'this is the console of connection error')
-    })
+      });
   }
 
   checkDeviceConnection() {
@@ -184,6 +199,23 @@ export default class App extends Component {
       alert('Disconnected Successfully')
       console.log(res, 'Device disconnected successfully')
     })
+  }
+
+  async listen() {
+    this.bleSubscription = await this.manager.monitorCharacteristicForDevice(
+      this.state.device.id,
+      this.gateway.BLE_COMMUNICATION.BLE_SERVICE_UUID,
+      this.gateway.BLE_COMMUNICATION.BLE_CHARACTERISTIC_NOTIFY_UUID,
+      (error, characteristic) => {
+        if (error) {
+          console.log('characteristic error===>: ', error);
+        } else {
+          console.log('receive characteristic: ', characteristic.value);
+          const bytes = base64ToBytes(characteristic.value);
+          console.log('receive characteristic bytes===>: ', bytes);
+        }
+      },
+    );
   }
 
   render() {
